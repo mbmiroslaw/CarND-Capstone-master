@@ -26,6 +26,7 @@ TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 
 LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
 STOP_AHEAD_WPS = 0
+BUFFOR_STOP = 1 #Number of waypoint that car will stop before stop line waypoint
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -92,7 +93,7 @@ class WaypointUpdater(object):
             self.continue_driving_from_traffic_light = False
 	elif self.continue_driving_from_traffic_light:
             self.next_n_waypoints, \
-            self.next_n_waypoint_glob_idxs = self._freshly_calc_next_waypoints(car_wp_idx=(self.car_wp_idx -2)) #MBMiroslawDecreased by 2 for moving from TL
+            self.next_n_waypoint_glob_idxs = self._freshly_calc_next_waypoints(car_wp_idx=(self.car_wp_idx - BUFFOR_STOP)) #MBMiroslawDecreased by 2 for moving from TL
             self.continue_driving_from_traffic_light = False
         else:
             self._update_next_waypoints(next_n_waypoints=self.next_n_waypoints,
@@ -172,7 +173,7 @@ class WaypointUpdater(object):
         self.seeing_red_light = True
         self.car_wp_idx = self._find_wp_in_front_of_car()
 
-        if self.car_wp_idx < (self.stop_waypoint_idx_for_traffic_light-2): #MBM decrease by 2
+        if self.car_wp_idx < (self.stop_waypoint_idx_for_traffic_light- BUFFOR_STOP): #MBM decrease by 2
             if not self.already_planed_to_stop:
                 self._plan_stop_wps(self.stop_waypoint_idx_for_traffic_light)
             else:
@@ -192,7 +193,7 @@ class WaypointUpdater(object):
         :param stop_waypoint_idx_for_traffic_light: the waypoint the car should stop at.
         """
         # the stop lane is still in front of us
-        number_of_wps_between_car_and_stop_lane = stop_waypoint_idx_for_traffic_light - self.car_wp_idx -2 #MBMiroslaw decrease by 2
+        number_of_wps_between_car_and_stop_lane = stop_waypoint_idx_for_traffic_light - self.car_wp_idx
 
         if self.already_planed_to_stop:
             # if we planed until the stop lane we must not change the plan
@@ -205,12 +206,14 @@ class WaypointUpdater(object):
             return
 
         for current_wp_number_in_next_wps_array in range(min(LOOKAHEAD_WPS, number_of_wps_between_car_and_stop_lane)):
-            number_of_wp_until_stop = number_of_wps_between_car_and_stop_lane -2 #MBMiroslaw decre WP by 2
+            number_of_wp_until_stop = number_of_wps_between_car_and_stop_lane - BUFFOR_STOP #MBMiroslaw decre WP by 2
             desired_wp_vel = self._calculate_decreasing_velocity(number_of_wp_until_stop,
                                                                  current_wp_number_in_next_wps_array)
 
-            if number_of_wps_between_car_and_stop_lane - current_wp_number_in_next_wps_array < (STOP_AHEAD_WPS -2): #MBMiroslaw decreased value of stop WP by 2
+            if number_of_wps_between_car_and_stop_lane - current_wp_number_in_next_wps_array < (STOP_AHEAD_WPS - BUFFOR_STOP): #MBMiroslaw decreased value of stop WP by 2
                 desired_wp_vel = 0
+#	    elif desired_wp_vel < 1.6: #Protect from too early stop
+#	        desired_wp_vel = 1.6
 
             self.set_waypoint_velocity(self.next_n_waypoints,
                                        current_wp_number_in_next_wps_array,
@@ -228,10 +231,10 @@ class WaypointUpdater(object):
         :param wp_number_in_next_wps: index of the waypoint to calculate the velocity for, in the next_n_waypoints array.
         :return: velocity for the waypoint at the index "wp_number_in_next_wps"
         """
-	if number_of_wps_until_stop_lane <=1:
+	if number_of_wps_until_stop_lane <=1:  #MBMiroslaw protect from negative WP
 	    return 0
         decrement_step = self.current_vel / number_of_wps_until_stop_lane
-        return decrement_step * (number_of_wps_until_stop_lane - wp_number_in_next_wps)
+	return decrement_step * (number_of_wps_until_stop_lane - wp_number_in_next_wps)
 
     def _publish_next_waypoints(self):
         """
@@ -275,9 +278,6 @@ class WaypointUpdater(object):
                 if curr_dist < closest_dist:
                     closest_idx = idx
                     closest_dist = curr_dist
-	if closest_idx > 11007:  #MBMiroslaw restart
-	    closest_idx = 0
-
 
         return closest_idx
 

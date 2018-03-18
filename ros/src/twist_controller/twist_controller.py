@@ -39,12 +39,12 @@ class Controller(object):
 
         vel_error = proposed_lin_vel - current_lin_vel
         vel_cmd = self.vel_pid.step(vel_error, self._sample_time)
-        if proposed_lin_vel >= 3:    #MBMiroslaw change from 0 to 0.5 vel_cmd changedto proposed_lin_vel
+        if proposed_lin_vel >= 1.5:    #MBMiroslaw change from 0 to 0.5 vel_cmd changedto proposed_lin_vel
             throttle = vel_cmd
             brake = 0
 	elif proposed_lin_vel >= 0:  #MBMiroslaw added elif
 	    throttle = 0
-	    brake = - self.max_brake *1.0
+	    brake = - self.max_brake *0.4
         else:
             throttle = 0
             brake = self.max_brake * vel_cmd

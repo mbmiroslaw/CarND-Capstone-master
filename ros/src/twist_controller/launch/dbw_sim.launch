@@ -21,7 +21,7 @@
         pkg="rqt_plot"
         type="rqt_plot"
         name="control_plotter_twist"
-        args="/current_velocity/twist/linear/x /twist_cmd/twist/linear/x">
+        args="/current_velocity/twist/linear/x /twist_cmd/twist/linear/x /vehicle/throttle_cmd/pedal_cmd /vehicle/brake_cmd/pedal_cmd">
     </node>
 
     <node
